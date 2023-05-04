@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import NavigationToolbar2Tk
+from matplotlib.backend_bases import MouseButton
 import pandas as pd
 import tkinter as tk
 from tkinter import filedialog
@@ -19,6 +21,14 @@ class Luna:
             self.canvas.draw()
             self.canvas.get_tk_widget().grid(row=0, column=0, sticky="nsew", columnspan=7)
             self.plotted_data_dict = {}
+            self.y_max_entry = tk.Entry(root, width=9)
+            self.y_max_entry.grid(row=7, column=5, sticky="e")
+            self.y_min_entry = tk.Entry(root, width=9)
+            self.y_min_entry.grid(row=7, column=5, sticky="w")
+            self.x_min_entry = tk.Entry(root, width=9)
+            self.x_min_entry.grid(row=3, column=5, sticky="w")
+            self.x_max_entry = tk.Entry(root, width=9)
+            self.x_max_entry.grid(row=3, column=5, sticky="e", columnspan =1)
 
             self.xanes_button = tk.Button(self.master, text="XANES", command=lambda: self.update_axis_labels("XANES", "Energy (eV)", "Absorption Intensity (Normalized)"))
             self.xanes_button.grid(row=3, column=1)
@@ -32,6 +42,10 @@ class Luna:
             self.plotted_data = []
             self.x_label_var = tk.StringVar()
             self.y_label_var = tk.StringVar()
+                
+            self.toolbar = NavigationToolbar2Tk(self.canvas, self.master)
+            self.toolbar.grid(row=1, column=0, sticky="ew")
+
             
 
     def update_axis_labels(self, plot_type, x_label, y_label):
@@ -123,12 +137,19 @@ class Luna:
         self.plotted_data = []
         self.ax.clear()
         self.canvas.draw()
+        self.plotted_data_dict = {}
     
     def browse_file(self):
             file_path = filedialog.askopenfilename(title="Select file", filetypes=[("All Files", "*")])
             file_entry.delete(0, tk.END)
             file_entry.insert(0, file_path)
 
+    def zoom(event):
+        if event.button == MouseButton.LEFT:
+            self.ax.set_xlim(event.xdata - 0.05, event.xdata + 0.05)
+            self.ax.set_ylim(event.ydata - 0.05, event.ydata + 0.05)
+            self.canvas.draw()
+            
 root = tk.Tk()
 root.title("Luna")
 
@@ -140,23 +161,11 @@ x_min_label.grid(row=2, column=5, sticky="w")
 x_max_label = tk.Label(root, text="X max   ")
 x_max_label.grid(row=2, column=5, sticky="e")
 
-x_min_entry = tk.Entry(root, width=9)
-x_min_entry.grid(row=3, column=5, sticky="w")
-
-x_max_entry = tk.Entry(root, width=9)
-x_max_entry.grid(row=3, column=5, sticky="e", columnspan =1)
-
 y_min_label = tk.Label(root, text="   Y min")
 y_min_label.grid(row=6, column=5, sticky="w")
 
 y_max_label = tk.Label(root, text="Y max   ")
 y_max_label.grid(row=6, column=5, sticky="e")
-
-y_min_entry = tk.Entry(root, width=9)
-y_min_entry.grid(row=7, column=5, sticky="e")
-
-y_max_entry = tk.Entry(root, width=9)
-y_max_entry.grid(row=7, column=5, sticky="w")
 
 x_apply_button = tk.Button(root, text="Apply X Range", command=luna.apply_x_range)
 x_apply_button.grid(row=4, column=5)
@@ -197,6 +206,8 @@ empty_label = tk.Label(root)
 empty_label.grid(row=1, column=0)
 
 root.rowconfigure(1, weight=1)
+
+self.canvas.mpl_connect('button_press_event', zoom)
 
 save_plot_button = tk.Button(root, text="Save Plot",  command=lambda: luna.save_plot())
 save_plot_button.grid(row=8, column=3, sticky="e")
